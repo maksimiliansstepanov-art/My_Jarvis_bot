@@ -14,6 +14,7 @@ logging.basicConfig(level=logging.INFO)
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
+# Инициализируем бота напрямую без костылей
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -30,7 +31,7 @@ todo_list = ["Собрать костюм Марк-5", "Зарядить реа�
 async def cmd_start(message: types.Message):
     await message.answer(
         f"Протокол 'Джарвис' успешно активирован на удаленном сервере, сэр! \n"
-        f"Рад приветствовать вас, {message.from_user.first_name}. Все нейромодули онлайн. Я готов к диалогу.",
+        f"Рад приветствовать вас, {message.from_user.first_name}. Все системы ИИ онлайн. Что вас интересует?",
         reply_markup=get_main_menu()
     )
 
@@ -67,7 +68,7 @@ async def chat_with_ai(message: types.Message):
             f"Вопрос пользователя: {message.text}\nОтвет Джарвиса:"
         )
         
-        # Используем открытое зеркало ИИ Qwen, которое обожает русский язык и всегда доступно
+        # Используем открытое зеркало ИИ Qwen
         url = "https://huggingface.co"
         payload = {"inputs": prompt, "parameters": {"max_new_tokens": 150, "temperature": 0.7}}
         
@@ -75,8 +76,7 @@ async def chat_with_ai(message: types.Message):
         
         if response.status_code == 200:
             result = response.json()
-            # Извлекаем сгенерированный текст
-            if isinstance(result, list) and "generated_text" in result[0]:
+            if isinstance(result, list) and len(result) > 0 and "generated_text" in result[0]:
                 full_text = result[0]["generated_text"]
                 # Отрезаем сам промпт, чтобы бот вывел только чистый ответ
                 ai_response = full_text.replace(prompt, "").strip()
