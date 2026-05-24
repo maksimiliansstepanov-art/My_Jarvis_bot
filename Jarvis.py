@@ -60,24 +60,30 @@ async def get_tasks(message: types.Message):
 async def chat_with_ai(message: types.Message):
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
     
+    # Формируем четкий промпт для характера Джарвиса
+    system_prompt = "Ты — Джарвис, умный, вежливый ИИ-ассистент Тони Старка. Обращайся к пользователю только 'сэр'. Отвечай кратко, емко и только на русском языке."
+    full_prompt = f"{system_prompt}\nЗапрос от пользователя: {message.text}"
+    
+    # ПЛАН А: Используем стабильное API Pollinations (передаем через параметры, чтобы не ломать URL)
     try:
-        # Отправляем запрос на публичный бесплатный ИИ-интерфейс duckduckgo/text-generation
-        # Он стабилен, быстр и не требует токенов
         url = "https://pollinations.ai"
-        prompt = f"Ты Джарвис, вежливый ИИ-ассистент Тони Старка. Отвечай кратко на русском, называй пользователя 'сэр'. Запрос: {message.text}"
-        
-        response = requests.get(f"{url}{prompt}", timeout=15)
-        ai_response = response.text
-        
-        await message.answer(ai_response)
-        
+        response = requests.get(url, params={"text": full_prompt}, timeout=10)
+        if response.status_code == 200 and response.text.strip():
+            await message.answer(response.text.strip())
+            return
     except Exception as e:
-        logging.error(f"Ошибка ИИ: {e}")
-        await message.answer("Сэр, возникли временные трудности с моим мыслительным ядром. Повторите запрос.")
+        logging.error(f"Ошибка План А: {e}")
 
-async def main():
-    print("Джарвис готов к обновлению...")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+    # ПЛАН Б: Резервное зеркало (если первый сервис перегружен)
+    try:
+        backup_url = f"https://pollinations.ai{requests.utils.quote(full_prompt)}"
+        # Пробуем получить быстрый текстовый ответ от альтернативной точки
+        res = requests.get(backup_url, timeout=10)
+        if res.status_code == 200:
+            await message.answer(res.text.strip())
+            return
+    except Exception as e:
+        logging.error(f"Ошибка План Б: {e}")
+        
+    # Если вообще всё легло
+    await message.answer("Сэр, спутниковая связь с мыслительным ядром временно нестабильна. Повторите запрос через пару секунд.")
