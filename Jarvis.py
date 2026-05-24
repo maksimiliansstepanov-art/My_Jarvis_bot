@@ -7,14 +7,14 @@ from aiogram.filters import CommandStart
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from dotenv import load_dotenv
 
-# Включаем логирование, чтобы видеть работу бота в панели сервера
+# Включаем логирование
 logging.basicConfig(level=logging.INFO)
 
 # Загружаем переменные окружения
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
-# На сервере работаем напрямую без прокси и зеркал!
+# На сервере работаем напрямую!
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -30,8 +30,8 @@ todo_list = ["Собрать костюм Марк-5", "Зарядить реа�
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     await message.answer(
-        f"Протокол 'Джарвис' успешно активирован на удаленном сервере Старк Индастриз, сэр! \n"
-        f"Рад приветствовать вас, {message.from_user.first_name}. Я онлайн.",
+        f"Протокол 'Джарвис' успешно активирован на удаленном сервере, сэр! \n"
+        f"Рад приветствовать вас, {message.from_user.first_name}. Все нейромодули онлайн. Я готов к диалогу.",
         reply_markup=get_main_menu()
     )
 
@@ -55,8 +55,28 @@ async def get_tasks(message: types.Message):
         tasks_text += f"{index}. {task}\n"
     await message.answer(tasks_text)
 
+# ОБРАБОТКА ЛЮБОГО ДРУГОГО ТЕКСТА ЧЕРЕЗ БЕСПЛАТНЫЙ ИИ ЧЕРЕЗ REQUESTS
+@dp.message()
+async def chat_with_ai(message: types.Message):
+    await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
+    
+    try:
+        # Отправляем запрос на публичный бесплатный ИИ-интерфейс duckduckgo/text-generation
+        # Он стабилен, быстр и не требует токенов
+        url = "https://pollinations.ai"
+        prompt = f"Ты Джарвис, вежливый ИИ-ассистент Тони Старка. Отвечай кратко на русском, называй пользователя 'сэр'. Запрос: {message.text}"
+        
+        response = requests.get(f"{url}{prompt}", timeout=15)
+        ai_response = response.text
+        
+        await message.answer(ai_response)
+        
+    except Exception as e:
+        logging.error(f"Ошибка ИИ: {e}")
+        await message.answer("Сэр, возникли временные трудности с моим мыслительным ядром. Повторите запрос.")
+
 async def main():
-    print("Джарвис успешно запущен на сервере и слушает команды...")
+    print("Джарвис готов к обновлению...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
